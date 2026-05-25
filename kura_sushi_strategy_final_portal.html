@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kura Sushi Strategic Analysis - TP Final</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Configuration for Dark Mode & Customs -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            kuraRed: { DEFAULT: '#E60012', hover: '#C00010', glow: 'rgba(230, 0, 18, 0.4)' },
+            kuraDark: { 900: '#0F0F12', 800: '#18181F', 700: '#252530', 600: '#323242' },
+            woodLight: '#F5ECE1', woodDark: '#2C1D11'
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,600;1,700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    body { font-family: 'Noto Sans TC', sans-serif; }
+    .serif-accent { font-family: 'Playfair Display', serif; }
+    /* Wave Animation Background */
+    .wave-bg {
+      background-image: radial-gradient(circle at 100% 150%, transparent 24%, #E60012 24%, #E60012 28%, transparent 28%, transparent);
+      background-size: 40px 40px; opacity: 0.05;
+    }
+    .glow-hover:hover { box-shadow: 0 0 25px rgba(230, 0, 18, 0.35); border-color: rgba(230, 0, 18, 0.6); }
+    @keyframes float-slow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(3deg); }
+    }
+    .float-item-1 { animation: float-slow 8s ease-in-out infinite; }
+    .float-item-2 { animation: float-slow 12s ease-in-out infinite 2s; }
+    .float-item-3 { animation: float-slow 10s ease-in-out infinite 4s; }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    ::-webkit-scrollbar-thumb { background: #E60012; border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: #B0000D; }
+    #progress-bar { position: fixed; top: 0; left: 0; height: 4px; background: linear-gradient(90deg, #E60012, #FF8A00); z-index: 100; width: 0%; transition: width 0.1s ease-out; }
+    .flip-card { background-color: transparent; perspective: 1000px; }
+    .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+    .flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
+    .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+    .flip-card-back { transform: rotateY(180deg); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-kuraDark-900 dark:text-gray-100 transition-colors duration-300 relative overflow-x-hidden">
+
+  <!-- Scroll Progress Bar -->
+  <div id="progress-bar"></div>
+
+  <!-- Audio Guide Control Float panel -->
+  <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 max-w-sm sm:max-w-md w-full px-4">
+    <button id="backToTop" class="hidden p-3 bg-kuraRed text-white rounded-full shadow-lg hover:bg-kuraRed-hover transition-transform transform hover:scale-110 focus:outline-none" title="Back to Top">
+      <i data-lucide="arrow-up" class="w-6 h-6"></i>
+    </button>
+    
+    <div id="audioPlayerPanel" class="bg-white/95 dark:bg-kuraDark-800/95 backdrop-blur-md p-4 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col gap-3 w-full transition-all duration-300">
+      <div class="flex items-center justify-between border-b border-gray-150 dark:border-gray-700 pb-2">
+        <div class="flex items-center gap-2">
+          <span class="relative flex h-3 w-3">
+            <span id="audioPulseRing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 hidden"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+          </span>
+          <div>
+            <p class="font-extrabold text-xs tracking-wider uppercase text-gray-800 dark:text-gray-200" data-translate="audio.title">AI Dynamic Narrator</p>
+            <span id="audioStatus" class="text-[10px] text-gray-500 dark:text-gray-400 font-semibold block" data-translate="audio.idle">Narrator System Ready</span>
+          </div>
+        </div>
+        <div class="text-xs font-bold text-kuraRed" id="narratorProgress">Block 0 / 0</div>
+      </div>
+      <div class="bg-gray-50 dark:bg-kuraDark-900 p-2.5 rounded-xl border border-gray-150 dark:border-gray-700 text-[11px] leading-relaxed font-medium text-gray-600 dark:text-gray-300 h-14 overflow-y-auto" id="spokenPreviewBox">
+        <span class="italic opacity-60" data-translate="audio.readyDesc">Click play below to begin reading the entire webpage from top to bottom. Enjoy active subtitle tracking!</span>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] font-black uppercase px-2 py-0.5 bg-gray-200 dark:bg-kuraDark-700 rounded text-gray-500" id="audioVoiceLabel">UK Male</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="audioPrevBtn" class="p-2 bg-gray-100 dark:bg-kuraDark-700 hover:bg-gray-200 dark:hover:bg-kuraDark-600 rounded-full transition-all text-gray-700 dark:text-gray-200 focus:outline-none">
+            <i data-lucide="skip-back" class="w-4 h-4"></i>
+          </button>
+          <button id="audioGuideBtn" class="p-3.5 bg-kuraRed hover:bg-kuraRed-hover text-white rounded-full transition-transform transform hover:scale-105 shadow-md focus:outline-none">
+            <span id="audioBtnIconWrapper"><i data-lucide="play" class="w-5 h-5"></i></span>
+          </button>
+          <button id="audioNextBtn" class="p-2 bg-gray-100 dark:bg-kuraDark-700 hover:bg-gray-200 dark:hover:bg-kuraDark-600 rounded-full transition-all text-gray-700 dark:text-gray-200 focus:outline-none">
+            <i data-lucide="skip-forward" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <button id="audioStopBtn" class="p-2 bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-950 rounded-full transition-colors focus:outline-none">
+          <i data-lucide="square" class="w-4 h-4 text-red-600"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav class="sticky top-0 z-40 bg-white/70 dark:bg-kuraDark-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <a href="#hero" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 bg-kuraRed rounded-lg flex items-center justify-center shadow-lg transform group-hover:rotate-12 transition-transform">
+            <span class="text-white font-black text-xl tracking-tighter">くら</span>
+          </div>
+          <div>
+            <span class="font-extrabold text-xl tracking-wider uppercase block dark:text-white">Kura Sushi <span class="text-kuraRed">Tech</span></span>
+            <span class="text-xs text-gray-500 uppercase tracking-widest block font-semibold dark:text-gray-400">TP Final Strategy</span>
+          </div>
+        </a>
+        <div class="hidden lg:flex items-center space-x-1 xl:space-x-2 text-sm font-bold">
+          <a href="#exec-summary" class="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800 transition-colors" data-translate="nav.summary">Summary</a>
+          <a href="#tp0" class="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800 transition-colors" data-translate="nav.tp0">TP0: Overview</a>
+          <a href="#tp1" class="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800 transition-colors" data-translate="nav.tp1">TP1: External</a>
+          <a href="#tp2" class="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800 transition-colors" data-translate="nav.tp2">TP2: Internal</a>
+          <a href="#tp3" class="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800 transition-colors" data-translate="nav.tp3">TP3: Strategy</a>
+          <a href="#lab" class="px-3 py-2 rounded-lg text-kuraRed border border-kuraRed/20 hover:bg-kuraRed/10 transition-colors" data-translate="nav.lab">Interactive Lab</a>
+          <a href="#videos" class="px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800 transition-colors" data-translate="nav.videos">Videos</a>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="langToggle" class="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-kuraDark-800 font-bold text-xs transition-colors flex items-center gap-1.5">
+            <i data-lucide="globe" class="w-4 h-4 text-kuraRed"></i>
+            <span id="langLabel">EN</span>
+          </button>
+          <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-kuraDark-800 text-gray-600 dark:text-gray-300 transition-colors">
+            <span id="themeIconWrapper"><i data-lucide="moon" class="w-5 h-5"></i></span>
+          </button>
+          <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800"><i data-lucide="menu" class="w-6 h-6"></i></button>
+        </div>
+      </div>
+    </div>
+    <div id="mobileMenu" class="hidden lg:hidden bg-white dark:bg-kuraDark-900 border-t border-gray-200 dark:border-gray-800 px-4 py-4 space-y-2 font-bold shadow-lg">
+      <a href="#exec-summary" class="block px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800" data-translate="nav.summary">Summary</a>
+      <a href="#tp0" class="block px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800" data-translate="nav.tp0">TP0: Overview</a>
+      <a href="#tp1" class="block px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800" data-translate="nav.tp1">TP1: External</a>
+      <a href="#tp2" class="block px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800" data-translate="nav.tp2">TP2: Internal</a>
+      <a href="#tp3" class="block px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800" data-translate="nav.tp3">TP3: Strategy</a>
+      <a href="#lab" class="block px-3 py-2 rounded-lg text-kuraRed bg-kuraRed/5" data-translate="nav.lab">Interactive Lab</a>
+      <a href="#videos" class="block px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-kuraDark-800" data-translate="nav.videos">Videos</a>
+    </div>
+  </nav>
+
+  <!-- Hero Landing Page -->
+  <section id="hero" class="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-white dark:bg-kuraDark-900 border-b border-gray-200 dark:border-gray-800 transition-colors">
+    <div class="absolute inset-0 wave-bg"></div>
+    <div class="absolute top-24 left-10 lg:left-24 float-item-1 opacity-20 dark:opacity-40">
+      <svg class="w-16 h-16" viewBox="0 0 64 64"><rect x="12" y="28" width="40" height="24" rx="10" fill="#E60012" /><ellipse cx="32" cy="24" rx="18" ry="10" fill="#FFFFFF" /><path d="M14 24 C 20 16, 44 16, 50 24" stroke="#FFE97F" stroke-width="3" fill="none" /></svg>
+    </div>
+    <div class="absolute bottom-20 right-12 lg:right-32 float-item-2 opacity-30 dark:opacity-50">
+      <svg class="w-20 h-20" viewBox="0 0 64 64"><rect x="8" y="32" width="48" height="20" rx="6" fill="#111111" /><ellipse cx="32" cy="32" rx="22" ry="14" fill="#FFFFFF" /><ellipse cx="32" cy="26" rx="16" ry="10" fill="#E60012" /></svg>
+    </div>
+    <div class="max-w-5xl mx-auto px-4 text-center relative z-10 space-y-8">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-kuraRed/10 text-kuraRed dark:text-red-400 font-extrabold text-sm tracking-wider uppercase">
+        <i data-lucide="award" class="w-4 h-4"></i><span>SMMC Final Project - EMI</span>
+      </div>
+      <h1 class="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-none text-gray-950 dark:text-white">
+        KURA SUSHI <br class="hidden sm:inline">
+        <span class="text-kuraRed glow-hover transition-all duration-300 rounded px-2">STRATEGIC ANALYSIS</span>
+      </h1>
+      <p class="max-w-3xl mx-auto text-lg sm:text-2xl text-gray-600 dark:text-gray-300 font-medium" data-translate="hero.sub">Exploring the transnational dynamics, AI operations, and strategic transition of a technology-driven dining phenomenon.</p>
+      <div class="flex flex-wrap justify-center gap-4 pt-4">
+        <a href="#exec-summary" class="px-8 py-4 bg-kuraRed hover:bg-kuraRed-hover text-white font-extrabold text-lg rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+          <span data-translate="hero.cta">Explore Analysis</span><i data-lucide="arrow-down" class="w-5 h-5"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: Executive Summary -->
+  <section id="exec-summary" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <h2 class="text-4xl md:text-5xl font-black text-gray-950 dark:text-white" data-translate="summary.title">Executive Summary</h2>
+      <div class="h-1.5 w-24 bg-kuraRed mx-auto mt-4 rounded-full"></div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 bg-gradient-to-br from-white to-gray-50 dark:from-kuraDark-800 dark:to-kuraDark-700 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-md">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="p-3 bg-red-100 dark:bg-red-950/50 text-kuraRed rounded-xl"><i data-lucide="lightbulb" class="w-6 h-6"></i></span>
+          <h3 class="text-2xl font-bold dark:text-white" data-translate="summary.card1.title">Global Technology-Driven Dining</h3>
+        </div>
+        <p class="text-gray-600 dark:text-gray-300 leading-relaxed text-base" data-translate="summary.card1.desc">Kura Sushi has successfully evolved from a traditional Japanese restaurant chain into an industry-leading, tech-driven entertainment dining ecosystem.</p>
+        <div class="grid grid-cols-3 gap-4 pt-8 border-t border-gray-200 dark:border-gray-700 mt-6">
+          <div><span class="block text-3xl font-extrabold text-kuraRed">650+</span><span class="text-xs text-gray-500 uppercase font-bold" data-translate="summary.stat1">Global Outlets</span></div>
+          <div><span class="block text-3xl font-extrabold text-kuraRed">30x</span><span class="text-xs text-gray-500 uppercase font-bold" data-translate="summary.stat2">P/E Valuation</span></div>
+          <div><span class="block text-3xl font-extrabold text-kuraRed">87.6%</span><span class="text-xs text-gray-500 uppercase font-bold" data-translate="summary.stat3">Net Drop</span></div>
+        </div>
+      </div>
+      <div class="bg-gradient-to-b from-kuraRed to-red-800 text-white p-8 rounded-3xl shadow-xl">
+        <h3 class="text-xl font-bold uppercase tracking-wide border-b border-white/20 pb-2 mb-4" data-translate="summary.card2.title">Taiwan Focus</h3>
+        <p class="text-sm text-red-50/90 leading-relaxed" data-translate="summary.card2.desc">Following the closure of the Hong Kong subsidiary, Kura Sushi redirected resources to Taiwan—opening the 62nd branch at Linyuan, Kaohsiung.</p>
+        <div class="bg-white/10 p-4 rounded-xl border border-white/10 mt-6">
+          <p class="text-xs font-semibold italic text-red-100" data-translate="summary.card2.tag">"Prioritizing stable geographic hubs."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: TP0 - Company Overview -->
+  <section id="tp0" class="py-24 bg-gray-100/60 dark:bg-kuraDark-800/40 border-y border-gray-200 dark:border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-16"><h2 class="text-4xl md:text-5xl font-black text-gray-950 dark:text-white" data-translate="tp0.title">TP0: Company Overview</h2><div class="h-1 w-24 bg-kuraRed rounded-full mt-4"></div></div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white dark:bg-kuraDark-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <h3 class="text-2xl font-bold mb-6 flex items-center gap-2 dark:text-white"><i data-lucide="calendar" class="w-5 h-5 text-kuraRed"></i><span data-translate="tp0.history">History & Milestones</span></h3>
+          <div class="space-y-6 relative border-l border-gray-200 dark:border-gray-700 pl-4 ml-2">
+            <div class="relative"><span class="absolute -left-[21px] top-1.5 w-3.5 h-3.5 bg-kuraRed rounded-full"></span><span class="text-sm font-black text-kuraRed">1977</span><h4 class="font-bold dark:text-white" data-translate="tp0.t1.title">Founded in Osaka</h4><p class="text-xs text-gray-500" data-translate="tp0.t1.desc">Launched as a traditional model.</p></div>
+            <div class="relative"><span class="absolute -left-[21px] top-1.5 w-3.5 h-3.5 bg-kuraRed rounded-full"></span><span class="text-sm font-black text-kuraRed">1995</span><h4 class="font-bold dark:text-white">Invention of "Sendo-kun"</h4><p class="text-xs text-gray-500" data-translate="tp0.t2.desc">Engineered patented dome covers.</p></div>
+            <div class="relative"><span class="absolute -left-[21px] top-1.5 w-3.5 h-3.5 bg-kuraRed rounded-full"></span><span class="text-sm font-black text-kuraRed">2026</span><h4 class="font-bold dark:text-white" data-translate="tp0.t4.title">Kaohsiung & HK Restructuring</h4><p class="text-xs text-gray-500" data-translate="tp0.t4.desc">Opened 62nd Taiwan branch; dissolved HK branch.</p></div>
+          </div>
+        </div>
+        <div class="flex flex-col gap-6">
+          <div class="bg-white dark:bg-kuraDark-800 p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1">
+            <h3 class="font-extrabold text-lg dark:text-white mb-2" data-translate="tp0.pos1.title">Smart Conveyor Automation</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300" data-translate="tp0.pos1.desc">Pioneering dynamic automation workflows and embedded RFID.</p>
+          </div>
+          <div class="bg-white dark:bg-kuraDark-800 p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 flex-1">
+            <h3 class="font-extrabold text-lg dark:text-white mb-2" data-translate="tp0.pos2.title">Bikkura Pon Gamification</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300" data-translate="tp0.pos2.desc">Transforms eating into entertainment with capsule toys.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: TP1 - External -->
+  <section id="tp1" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16"><h2 class="text-4xl md:text-5xl font-black text-gray-950 dark:text-white" data-translate="tp1.title">TP1: External Analysis</h2></div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+      <div class="bg-white dark:bg-kuraDark-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <h3 class="text-2xl font-bold mb-4 dark:text-white" data-translate="tp1.porter">Porter's Five Forces</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" data-translate="tp1.f2.defense">Intense competition from Sushiro mitigated through automation.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" data-translate="tp1.f1.defense">Threat of substitutes mitigated via Bikkura Pon gamification.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" data-translate="tp1.pestel.l.desc">Complex application of lease recognition standards like IFRS 16.</p>
+      </div>
+      <div class="bg-white dark:bg-kuraDark-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <h3 class="text-2xl font-bold mb-4 dark:text-white" data-translate="tp1.bcg">BCG Strategic Matrix</h3>
+        <div class="space-y-4">
+          <div class="p-4 bg-gray-50 dark:bg-kuraDark-900 rounded-xl border border-gray-200 dark:border-gray-700">
+            <span class="font-bold text-kuraRed" data-translate="tp1.bcg.stars">Stars</span><p class="text-sm dark:text-gray-300">Taiwan & USA - High growth markets.</p>
+          </div>
+          <div class="p-4 bg-gray-50 dark:bg-kuraDark-900 rounded-xl border border-gray-200 dark:border-gray-700">
+            <span class="font-bold text-gray-500" data-translate="tp1.bcg.qm">Question Marks</span><p class="text-sm dark:text-gray-300">Hong Kong - Liquidated due to high friction.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: TP2 - Internal -->
+  <section id="tp2" class="py-24 bg-gray-100/60 dark:bg-kuraDark-800/40 border-y border-gray-200 dark:border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-16"><h2 class="text-4xl md:text-5xl font-black text-gray-950 dark:text-white" data-translate="tp2.title">TP2: Core Competencies</h2></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-kuraDark-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-lg mb-2 dark:text-white" data-translate="tp2.t1.title">Tangible Assets</h3><p class="text-sm text-gray-600 dark:text-gray-400" data-translate="tp2.t1.desc">650+ global automated tracks.</p>
+        </div>
+        <div class="bg-white dark:bg-kuraDark-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-lg mb-2 dark:text-white" data-translate="tp2.t2.title">Intangible Assets</h3><p class="text-sm text-gray-600 dark:text-gray-400" data-translate="tp2.t2.desc">Extensive automation patents.</p>
+        </div>
+        <div class="bg-white dark:bg-kuraDark-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-lg mb-2 dark:text-white" data-translate="tp2.t3.title">Core Competencies</h3><p class="text-sm text-gray-600 dark:text-gray-400" data-translate="tp2.t3.desc">Proprietary AI kitchen models.</p>
+        </div>
+        <div class="bg-white dark:bg-kuraDark-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 class="font-bold text-lg mb-2 dark:text-white" data-translate="tp2.t4.title">Dynamic Capabilities</h3><p class="text-sm text-gray-600 dark:text-gray-400" data-translate="tp2.t4.desc">Quick structural reconfiguration.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: TP3 - Strategy -->
+  <section id="tp3" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16"><h2 class="text-4xl md:text-5xl font-black text-gray-950 dark:text-white" data-translate="tp3.title">TP3: Strategy & Challenges</h2></div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+      <div class="bg-white dark:bg-kuraDark-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <h3 class="text-2xl font-bold mb-4 dark:text-white" data-translate="tp3.bstrat.title">Differentiation Focus</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-300" data-translate="tp3.bstrat.desc">Combining smart dining automation with IP collaborations.</p>
+      </div>
+      <div class="bg-gradient-to-br from-kuraDark-800 to-kuraDark-700 text-white p-8 rounded-3xl shadow-lg border border-gray-700">
+        <h3 class="text-2xl font-bold mb-4" data-translate="tp3.cstrat.title">Geographical Restructuring</h3>
+        <p class="text-sm text-gray-300" data-translate="tp3.cstrat.desc">March 2026 decision to dissolve HK operations and reinvest into Taiwan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: Interactive Lab -->
+  <section id="lab" class="py-24 bg-gradient-to-b from-gray-900 to-kuraDark-900 text-white border-y border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16"><h2 class="text-4xl md:text-5xl font-black text-white" data-translate="lab.title">Interactive Lab</h2></div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div class="space-y-8">
+          <!-- Sim A -->
+          <div class="bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-md">
+            <h3 class="text-xl font-bold mb-4"><i data-lucide="cpu" class="text-kuraRed w-5 h-5 inline mr-2"></i><span data-translate="lab.simA.title">AI Demand Forecast Simulator</span></h3>
+            <div class="flex justify-between text-xs font-bold mb-1 text-gray-300"><span data-translate="lab.simA.label">Customer Traffic</span><span id="trafficValue">1,200</span></div>
+            <input type="range" id="trafficInput" min="200" max="3000" value="1200" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-kuraRed">
+            <div class="grid grid-cols-2 gap-4 pt-4 mt-4"><div class="bg-white/5 p-3 rounded-xl"><span class="text-[10px] text-gray-400 block" data-translate="lab.simA.out1">Predicted Prep Need</span><span id="predictedPrep" class="text-lg font-black text-white">4,800</span></div><div class="bg-white/5 p-3 rounded-xl"><span class="text-[10px] text-gray-400 block" data-translate="lab.simA.out2">Waste Reduction Ratio</span><span id="wasteReduction" class="text-lg font-black text-green-400">18.5%</span></div></div>
+          </div>
+          <!-- Sim B -->
+          <div class="bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-md">
+            <h3 class="text-xl font-bold mb-4"><i data-lucide="bar-chart" class="text-kuraRed w-5 h-5 inline mr-2"></i><span data-translate="lab.simB.title">Profit Margin Simulator</span></h3>
+            <div class="mb-4">
+              <div class="flex justify-between text-xs font-bold mb-1 text-gray-300"><span data-translate="lab.simB.cost1">Seafood Cost</span><span id="seafoodCostValue">38%</span></div>
+              <input type="range" id="seafoodCostInput" min="25" max="50" value="38" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-kuraRed">
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-bold mb-1 text-gray-300"><span data-translate="lab.simB.cost2">Labor Cost</span><span id="laborCostValue">28%</span></div>
+              <input type="range" id="laborCostInput" min="20" max="40" value="28" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-kuraRed">
+            </div>
+            <div class="grid grid-cols-2 gap-4 pt-4 mt-4"><div class="bg-white/5 p-3 rounded-xl"><span class="text-[10px] text-gray-400 block" data-translate="lab.simB.out1">Net Profit Margin</span><span id="netProfitMargin" class="text-lg font-black text-white">4.2%</span></div><div class="bg-white/5 p-3 rounded-xl"><span class="text-[10px] text-gray-400 block" data-translate="lab.simB.out2">Risk Evaluation</span><span id="riskEvaluation" class="text-lg font-black text-amber-400">Moderate</span></div></div>
+          </div>
+        </div>
+        <!-- Quiz -->
+        <div class="bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-md">
+          <h3 class="text-2xl font-bold mb-6"><i data-lucide="compass" class="text-kuraRed w-5 h-5 inline mr-2"></i><span data-translate="lab.quiz.title">Strategy Decision Game</span></h3>
+          <div id="quizQuestion" class="font-bold text-lg border-b border-white/10 pb-4 mb-4">Question loading...</div>
+          <div id="quizOptions" class="space-y-3"></div>
+          <div id="quizResult" class="mt-8 p-4 bg-kuraRed/10 border border-kuraRed/20 rounded-xl hidden">
+            <span class="text-xs uppercase text-kuraRed block font-bold" data-translate="lab.quiz.res">Recommendation</span>
+            <p id="quizResultText" class="text-sm text-gray-200 mt-1">...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7: Team -->
+  <section id="team" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-kuraDark-800 p-8 sm:p-12 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-md">
+      <h3 class="text-2xl sm:text-3xl font-bold dark:text-white mb-4" data-translate="team.title">Team Collaboration Workflow</h3>
+      <p class="text-base text-gray-600 dark:text-gray-300" data-translate="team.desc">Integrated collaborative workflow replacing mechanical separation.</p>
+    </div>
+  </section>
+
+  <!-- Section 8: 6 Videos -->
+  <section id="videos" class="py-24 bg-gray-100/60 dark:bg-kuraDark-800/40 border-t border-gray-200 dark:border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16"><h2 class="text-4xl font-black dark:text-white" data-translate="videos.title">Video Section</h2></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- V1 -->
+        <div class="bg-white dark:bg-kuraDark-800 rounded-3xl overflow-hidden shadow-sm">
+          <iframe class="w-full aspect-video" src="https://www.youtube.com/embed/YZUUt1x0EzQ?start=12" allowfullscreen></iframe>
+          <div class="p-5"><h4 class="font-extrabold dark:text-white" data-translate="videos.v1.title">Part 1: Strategy</h4></div>
+        </div>
+        <!-- V2 -->
+        <div class="bg-white dark:bg-kuraDark-800 rounded-3xl overflow-hidden shadow-sm">
+          <iframe class="w-full aspect-video" src="https://www.youtube.com/embed/iyxHkT4S4K0" allowfullscreen></iframe>
+          <div class="p-5"><h4 class="font-extrabold dark:text-white" data-translate="videos.v2.title">Part 2: Core Tech</h4></div>
+        </div>
+        <!-- V3 -->
+        <div class="bg-white dark:bg-kuraDark-800 rounded-3xl overflow-hidden shadow-sm">
+          <iframe class="w-full aspect-video" src="https://www.youtube.com/embed/LICXwt4sMsE" allowfullscreen></iframe>
+          <div class="p-5"><h4 class="font-extrabold dark:text-white" data-translate="videos.v3.title">Part 3: External</h4></div>
+        </div>
+        <!-- V4 -->
+        <div class="bg-white dark:bg-kuraDark-800 rounded-3xl overflow-hidden shadow-sm">
+          <iframe class="w-full aspect-video" src="https://www.youtube.com/embed/-6JmL8DWODE" allowfullscreen></iframe>
+          <div class="p-5"><h4 class="font-extrabold dark:text-white" data-translate="videos.v4.title">Part 4: SCM</h4></div>
+        </div>
+        <!-- V5 -->
+        <div class="bg-white dark:bg-kuraDark-800 rounded-3xl overflow-hidden shadow-sm">
+          <iframe class="w-full aspect-video" src="https://www.youtube.com/embed/ShkjfaVv204" allowfullscreen></iframe>
+          <div class="p-5"><h4 class="font-extrabold dark:text-white" data-translate="videos.v5.title">Part 5: Financial</h4></div>
+        </div>
+        <!-- V6 -->
+        <div class="bg-white dark:bg-kuraDark-800 rounded-3xl overflow-hidden shadow-sm">
+          <iframe class="w-full aspect-video" src="https://www.youtube.com/embed/XDudquAPrEQ" allowfullscreen></iframe>
+          <div class="p-5"><h4 class="font-extrabold dark:text-white" data-translate="videos.v6.title">Part 6: Roadmap</h4></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 9: References -->
+  <section class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-gray-200 dark:border-gray-800">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div class="bg-white dark:bg-kuraDark-800 p-8 rounded-3xl shadow-sm">
+        <h3 class="text-2xl font-bold mb-4 dark:text-white" data-translate="disclose.title">AI Usage Disclosure</h3>
+        <p class="text-sm dark:text-gray-300 mb-6" data-translate="disclose.desc">AI deployed responsibly for structure and narration.</p>
+      </div>
+      <div class="bg-white dark:bg-kuraDark-800 p-8 rounded-3xl shadow-sm">
+        <h3 class="text-2xl font-bold mb-4 dark:text-white" data-translate="ref.title">Academic References</h3>
+        <ul class="text-sm dark:text-gray-300 space-y-2">
+          <li>• Kura Sushi Corporate Group Reports (2026).</li>
+          <li>• Board Dissolution Announcements (HK).</li>
+          <li>• Yahoo Finance & Moneydj, March 2026.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Glossary Modal -->
+  <div id="glossaryModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-kuraDark-800 text-gray-900 dark:text-white max-w-lg w-full rounded-3xl p-8 shadow-2xl relative" id="glossaryBox">
+      <button id="closeGlossary" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-kuraDark-700"><i data-lucide="x" class="w-6 h-6"></i></button>
+      <h3 id="glossaryTitle" class="text-3xl font-black mb-4">Term Title</h3>
+      <p id="glossaryDefinition" class="text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed"></p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-12 border-t border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+      <p class="text-base font-extrabold text-white">SMMC 期末學術專案評估報告</p>
+      <p class="text-xs text-gray-400 mt-2">Instructor: Prof. Shihmin Lo 駱世民</p>
+    </div>
+  </footer>
+
+  <script>
+    const translations = {
+      zh: {
+        "nav.summary": "執行摘要", "nav.tp0": "TP0: 公司概況", "nav.tp1": "TP1: 外部分析", "nav.tp2": "TP2: 內部資源", "nav.tp3": "TP3: 成長策略", "nav.lab": "互動實驗室", "nav.videos": "影音中心",
+        "hero.sub": "深度探索藏壽司的跨國商業動力、AI營運系統，以及解散香港、資金全面回歸台灣市場的重大策略轉向。", "hero.cta": "展開深度分析報告", "hero.labCta": "進入互動模擬室",
+        "summary.title": "綜合執行摘要", "summary.card1.title": "全球科技驅動餐飲平台", "summary.card1.desc": "藏壽司將高度自動化（如自動軌道、餐盤RFID即時追蹤、廚房AI需求預測）與趣味扭蛋遊戲深度融合，創造出強烈顧客忠誠度的商業模型。",
+        "summary.stat1": "全球分店", "summary.stat2": "本益比期待", "summary.stat3": "淨利重組衰退",
+        "summary.card2.title": "台灣市場核心聚焦", "summary.card2.desc": "2026 年 3 月董事會全面解散香港並淡出中國市場，將營運重心完全轉回台灣市場，力圖展示規模經濟克服修正壓力。", "summary.card2.tag": "「精準鞏固穩健地緣市場。」",
+        "tp0.title": "TP0: 公司概況", "tp0.history": "歷史與里程碑", "tp0.t1.title": "創立於日本", "tp0.t1.desc": "開啟食物革命。", "tp0.t4.title": "香港清算與台灣擴張", "tp0.t4.desc": "2026開設台灣第62家門市；裁撤香港分公司。",
+        "tp0.pos1.title": "智慧軌道自動化", "tp0.pos1.desc": "餐盤內建IC晶片監控鮮度。", "tp0.pos2.title": "扭蛋遊戲化", "tp0.pos2.desc": "5盤觸發遊戲，大幅提高客單價。",
+        "tp1.title": "TP1: 外部分析", "tp1.porter": "波特五力模型", "tp1.bcg": "BCG 矩陣配置",
+        "tp1.pestel.l.desc": "餐飲擴張深受 IFRS 16 租賃資產負債認列準則影響。",
+        "tp1.f1.defense": "運用 Bikkura Pon 扭蛋與 IP 聯名消除替代品威脅。", "tp1.f2.defense": "面對壽司郎激烈競爭，藉AI自動化壓低營運成本抗衡。",
+        "tp1.bcg.stars": "明星事業", "tp1.bcg.qm": "問題事業 (已撤出)",
+        "tp2.title": "TP2: 內部資源", "tp2.t1.title": "有形資產", "tp2.t1.desc": "全球650+門市與智慧廚房硬體。", "tp2.t2.title": "無形資產", "tp2.t2.desc": "鮮度君專利與品牌授權。", "tp2.t3.title": "核心能耐", "tp2.t3.desc": "AI大數據供需精算。", "tp2.t4.title": "動態能力", "tp2.t4.desc": "面對極端環境快速重組跨國資產之韌性。",
+        "tp3.title": "TP3: 成長戰略", "tp3.bstrat.title": "差異化策略", "tp3.bstrat.desc": "鎖定中產家庭與科技年輕族群，提供平價安全體驗。", "tp3.cstrat.title": "地理性營運重組", "tp3.cstrat.desc": "2026 斷尾求生裁撤香港分部，將高額流動資金全力挹注台灣佈局。",
+        "lab.title": "互動模擬實驗室", "lab.simA.title": "AI 需求預測模擬器", "lab.simA.label": "預估日客流量", "lab.simA.out1": "預估捏製盤數", "lab.simA.out2": "食物浪費下降比例",
+        "lab.simB.title": "企業獲利計算器", "lab.simB.cost1": "海鮮原料成本", "lab.simB.cost2": "店鋪人事成本", "lab.simB.out1": "淨利率", "lab.simB.out2": "擴張風險評級",
+        "lab.quiz.title": "跨國擴張決策測驗", "lab.quiz.res": "策略診斷報告",
+        "team.title": "小組協作與整合", "team.desc": "摒棄傳統機械式分工，全面整合前端技術與商管資料。",
+        "videos.title": "簡報影音中心", "videos.v1.title": "Part 1: 戰略與重組", "videos.v2.title": "Part 2: 科技核心能耐", "videos.v3.title": "Part 3: 外部競爭分析", "videos.v4.title": "Part 4: 供應鏈與價值鏈", "videos.v5.title": "Part 5: 財務表現", "videos.v6.title": "Part 6: 未來藍圖",
+        "disclose.title": "AI 揭露聲明", "disclose.desc": "負責任地使用生成式 AI 輔助資料結構化、語音合成及程式碼構建。", "ref.title": "學術文獻",
+        "audio.title": "整頁智能朗讀中", "audio.idle": "朗讀系統準備就緒", "audio.readyDesc": "點擊播放鈕將自動遍歷本頁「所有文字段落」進行不間斷連續朗讀！支援同步即時字幕追蹤。", "audio.paused": "朗讀已暫停", "audio.finished": "網頁導覽朗讀完畢！"
+      },
+      en: {
+        "nav.summary": "Summary", "nav.tp0": "TP0: Overview", "nav.tp1": "TP1: External", "nav.tp2": "TP2: Internal", "nav.tp3": "TP3: Strategy", "nav.lab": "Interactive Lab", "nav.videos": "Videos",
+        "hero.sub": "Exploring transnational dynamics, AI operations, and strategic transition.", "hero.cta": "Explore Analysis", "hero.labCta": "Interactive Lab",
+        "summary.title": "Executive Summary", "summary.card1.title": "Technology-Driven Dining", "summary.card1.desc": "Evolved from a traditional chain into a tech-driven ecosystem using RFID and AI forecasting.",
+        "summary.stat1": "Global Outlets", "summary.stat2": "P/E Valuation", "summary.stat3": "Net Drop",
+        "summary.card2.title": "Taiwan Focus", "summary.card2.desc": "Redirected resources to Taiwan after dissolving HK operations.", "summary.card2.tag": "Prioritizing stable hubs.",
+        "tp0.title": "TP0: Overview", "tp0.history": "History & Milestones", "tp0.t1.title": "Founded in Osaka", "tp0.t1.desc": "Started traditional.", "tp0.t4.title": "HK Restructuring", "tp0.t4.desc": "Dissolved HK, opened Taiwan branches.",
+        "tp0.pos1.title": "Automation", "tp0.pos1.desc": "RFID enabled tracks.", "tp0.pos2.title": "Gamification", "tp0.pos2.desc": "Bikkura Pon boosts sales.",
+        "tp1.title": "TP1: External", "tp1.porter": "Porter's Five Forces", "tp1.bcg": "BCG Matrix",
+        "tp1.pestel.l.desc": "Complex lease standards (IFRS 16).", "tp1.f1.defense": "Gamification stops substitutes.", "tp1.f2.defense": "Automation counters Sushiro rivalry.",
+        "tp1.bcg.stars": "Stars", "tp1.bcg.qm": "Question Marks (Exited)",
+        "tp2.title": "TP2: Internal", "tp2.t1.title": "Tangible Assets", "tp2.t1.desc": "Automated tracks.", "tp2.t2.title": "Intangible Assets", "tp2.t2.desc": "Patents.", "tp2.t3.title": "Competencies", "tp2.t3.desc": "AI scaling.", "tp2.t4.title": "Dynamic Capabilities", "tp2.t4.desc": "Fast strategy shifts.",
+        "tp3.title": "TP3: Strategy", "tp3.bstrat.title": "Differentiation", "tp3.bstrat.desc": "Focus on high-quality and tech dining.", "tp3.cstrat.title": "Restructuring", "tp3.cstrat.desc": "Dissolved HK to protect capital and focus on Taiwan.",
+        "lab.title": "Interactive Lab", "lab.simA.title": "AI Demand Forecast", "lab.simA.label": "Traffic", "lab.simA.out1": "Prep Need", "lab.simA.out2": "Waste Reduction",
+        "lab.simB.title": "Profit Margin", "lab.simB.cost1": "Seafood Cost", "lab.simB.cost2": "Labor Cost", "lab.simB.out1": "Margin", "lab.simB.out2": "Risk",
+        "lab.quiz.title": "Strategy Quiz", "lab.quiz.res": "Recommendation",
+        "team.title": "Team Collaboration", "team.desc": "Integrated workflow across all disciplines.",
+        "videos.title": "Videos", "videos.v1.title": "Part 1: Strategy", "videos.v2.title": "Part 2: Core Tech", "videos.v3.title": "Part 3: External", "videos.v4.title": "Part 4: SCM", "videos.v5.title": "Part 5: Financial", "videos.v6.title": "Part 6: Roadmap",
+        "disclose.title": "AI Disclosure", "disclose.desc": "AI used responsibly.", "ref.title": "References",
+        "audio.title": "Narrator Active", "audio.idle": "System Ready", "audio.readyDesc": "Click play to sequentially read aloud 'all content text blocks'.", "audio.paused": "Paused", "audio.finished": "Complete!"
+      }
+    };
+
+    const glossaryDb = {
+      "Sendo-kun": { zh: "鮮度君：專利半自動圓頂蓋。", en: "Sendo-kun: Patented dome covers." },
+      "Bikkura Pon": { zh: "扭蛋遊戲：結合空盤軌道的遊戲系統。", en: "Bikkura Pon: Dining gamification system." },
+      "IFRS 16": { zh: "租賃準則：將租賃認列為資產負債。", en: "IFRS 16: Lease accounting standards." }
+    };
+
+    const quizDb = {
+      zh: [{ question: "面對中國市場激烈震盪，您的決策是？", options: [{ text: "解散香港，資金回防台灣", recommendation: "正確：保全資產的最佳防守戰略。" }] }],
+      en: [{ question: "Faced with China friction, your action is:", options: [{ text: "Dissolve HK, focus on Taiwan", recommendation: "Correct: Secures regional cash." }] }]
+    };
+
+    let currentLang = localStorage.getItem('kuraLang') || 'en';
+    let currentTheme = localStorage.getItem('kuraTheme') || 'light';
+    let synth = window.speechSynthesis;
+    let isSpeaking = false, isPaused = false, proseQueue = [], currentProseIdx = 0, currentUtterance = null;
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('kuraLang', lang);
+      const label = document.getElementById('langLabel');
+      if (label) label.textContent = lang === 'en' ? '繁中' : 'EN';
+      
+      stopNarrator();
+
+      document.querySelectorAll('[data-translate]').forEach(el => {
+        const key = el.getAttribute('data-translate');
+        if (translations[lang] && translations[lang][key]) el.innerHTML = translations[lang][key];
+      });
+
+      updateSimulators();
+      renderQuiz();
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+    }
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('kuraTheme', theme);
+      const wrapper = document.getElementById('themeIconWrapper');
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        if(wrapper) { wrapper.innerHTML = '<i data-lucide="sun" class="w-5 h-5"></i>'; }
+      } else {
+        document.documentElement.classList.remove('dark');
+        if(wrapper) { wrapper.innerHTML = '<i data-lucide="moon" class="w-5 h-5"></i>'; }
+      }
+      lucide.createIcons();
+    }
+
+    function buildProseQueue() {
+      proseQueue = [];
+      const sections = ['hero', 'exec-summary', 'tp0', 'tp1', 'tp2', 'tp3', 'lab', 'team'];
+      sections.forEach(secId => {
+        const sec = document.getElementById(secId);
+        if (!sec) return;
+        sec.querySelectorAll('h1, h2, h3, h4, p, li, [data-translate]').forEach(el => {
+          if (el.offsetHeight > 0 && el.innerText.trim().length > 0 && !el.querySelector('h1, h2, h3, h4, p, li')) {
+            const segments = el.innerText.trim().replace(/\s+/g, ' ').split(/(?<=[。！?？；;：:\n])|(?<=\.\s+)/).filter(s => s.trim().length > 0);
+            segments.forEach(seg => {
+              if (seg.trim().length > 1 && !seg.startsWith('•') && seg.length > 3) proseQueue.push({ text: seg.trim(), element: el });
+            });
+          }
+        });
+      });
+    }
+
+    function highlightElement(el) {
+      document.querySelectorAll('.audio-highlight').forEach(item => item.classList.remove('bg-yellow-100', 'dark:bg-yellow-950/40', 'rounded', 'p-1', 'audio-highlight'));
+      if (el) {
+        el.classList.add('bg-yellow-100', 'dark:bg-yellow-950/40', 'rounded', 'p-1', 'audio-highlight');
+        if (!(el.getBoundingClientRect().top >= 0 && el.getBoundingClientRect().bottom <= window.innerHeight)) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function playProseChunk() {
+      if (!proseQueue.length) buildProseQueue();
+      if (currentProseIdx < 0) currentProseIdx = 0;
+      
+      const spb = document.getElementById('spokenPreviewBox');
+      if (currentProseIdx >= proseQueue.length) {
+        if(spb) spb.innerHTML = `<span class="text-green-500 font-bold">${translations[currentLang]["audio.finished"]}</span>`;
+        stopNarrator();
+        return;
+      }
+
+      const chunk = proseQueue[currentProseIdx];
+      const np = document.getElementById('narratorProgress');
+      if(np) np.textContent = `Block ${currentProseIdx + 1} / ${proseQueue.length}`;
+      if(spb) spb.textContent = `"${chunk.text}"`;
+      highlightElement(chunk.element);
+
+      currentUtterance = new SpeechSynthesisUtterance(chunk.text);
+      let voices = synth.getVoices() || [];
+      if (currentLang === 'en') {
+        currentUtterance.lang = 'en-GB';
+        const vl = document.getElementById('audioVoiceLabel');
+        if(vl) vl.textContent = "UK Male";
+        currentUtterance.voice = voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('male')) || voices.find(v => v.lang === 'en-GB');
+      } else {
+        currentUtterance.lang = 'zh-TW';
+        const vl = document.getElementById('audioVoiceLabel');
+        if(vl) vl.textContent = "雅婷 Yating";
+        currentUtterance.voice = voices.find(v => v.lang === 'zh-TW' && v.name.includes('Yating')) || voices.find(v => v.lang.startsWith('zh'));
+      }
+
+      currentUtterance.onstart = () => {
+        isSpeaking = true; isPaused = false;
+        const st = document.getElementById('audioStatus');
+        if(st) st.textContent = translations[currentLang]["audio.title"];
+        const w = document.getElementById('audioBtnIconWrapper');
+        if(w) { w.innerHTML = '<i data-lucide="pause" class="w-5 h-5"></i>'; lucide.createIcons(); }
+        const r = document.getElementById('audioPulseRing');
+        if(r) r.classList.remove('hidden');
+      };
+
+      currentUtterance.onend = () => { if (isSpeaking && !isPaused) { currentProseIdx++; playProseChunk(); } };
+      currentUtterance.onerror = () => { if (isSpeaking && !isPaused) { currentProseIdx++; playProseChunk(); } };
+      synth.speak(currentUtterance);
+    }
+
+    function stopNarrator() {
+      if (synth) synth.cancel();
+      isSpeaking = false; isPaused = false; currentProseIdx = 0; currentUtterance = null;
+      
+      const st = document.getElementById('audioStatus');
+      if(st) st.textContent = translations[currentLang]["audio.idle"];
+      const w = document.getElementById('audioBtnIconWrapper');
+      if(w) { w.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i>'; lucide.createIcons(); }
+      const r = document.getElementById('audioPulseRing');
+      if(r) r.classList.add('hidden');
+      const np = document.getElementById('narratorProgress');
+      if(np) np.textContent = `Block 0 / ${proseQueue.length || 0}`;
+      document.querySelectorAll('.audio-highlight').forEach(item => item.classList.remove('bg-yellow-100', 'dark:bg-yellow-950/40', 'rounded', 'p-1', 'audio-highlight'));
+    }
+
+    function updateSimulators() {
+      const ti = document.getElementById('trafficInput'), sc = document.getElementById('seafoodCostInput'), lc = document.getElementById('laborCostInput');
+      if (!ti || !sc || !lc) return;
+      const traffic = parseInt(ti.value), seafood = parseInt(sc.value), labor = parseInt(lc.value);
+      
+      document.getElementById('trafficValue').textContent = currentLang === 'zh' ? `${traffic.toLocaleString()} 位顧客/日` : `${traffic.toLocaleString()} diners/day`;
+      document.getElementById('predictedPrep').textContent = currentLang === 'zh' ? `${Math.round(traffic * 3.8).toLocaleString()} 盤壽司` : `${Math.round(traffic * 3.8).toLocaleString()} plates`;
+      document.getElementById('wasteReduction').textContent = `${Math.min(5 + (traffic/150), 24.2).toFixed(1)}%`;
+      document.getElementById('seafoodCostValue').textContent = `${seafood}%`;
+      document.getElementById('laborCostValue').textContent = `${labor}%`;
+
+      const net = 100 - seafood - labor - 33.5;
+      const ne = document.getElementById('netProfitMargin'); if(ne) ne.textContent = `${net.toFixed(1)}%`;
+      const re = document.getElementById('riskEvaluation');
+      if (re) {
+        if (net < 2) { re.textContent = currentLang === 'zh' ? "高赤字風險" : "Critical Risk"; re.className = "text-lg font-black text-red-500 animate-pulse"; }
+        else if (net < 6) { re.textContent = currentLang === 'zh' ? "普通中等風險" : "Moderate Risk"; re.className = "text-lg font-black text-amber-500"; }
+        else { re.textContent = currentLang === 'zh' ? "健康低風險" : "Optimized Risk"; re.className = "text-lg font-black text-green-400"; }
+      }
+    }
+
+    function renderQuiz() {
+      const qz = document.getElementById('quizQuestion'), qo = document.getElementById('quizOptions');
+      if(!qz || !qo) return;
+      const data = quizDb[currentLang][0];
+      qz.textContent = data.question;
+      qo.innerHTML = "";
+      data.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-4 bg-white/5 border border-white/10 hover:border-kuraRed hover:bg-white/10 rounded-xl text-xs transition-all flex justify-between";
+        btn.innerHTML = `<span>${opt.text}</span><i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>`;
+        btn.addEventListener('click', () => { 
+          const qr = document.getElementById('quizResult'), qt = document.getElementById('quizResultText');
+          if(qt) qt.textContent = opt.recommendation;
+          if(qr) qr.classList.remove('hidden');
+        });
+        qo.appendChild(btn);
+      });
+      lucide.createIcons();
+    }
+
+    function bindGlossaryInline() {
+      const inlineTerms = ["Sendo-kun", "Bikkura Pon", "IFRS 16"];
+      document.querySelectorAll('section p').forEach(p => {
+        let html = p.innerHTML;
+        inlineTerms.forEach(term => {
+          if (html.includes(term) && !html.includes(`data-term="${term}"`)) {
+            html = html.replace(new RegExp(`\\b(${term})\\b`, 'g'), `<span class="text-kuraRed font-extrabold border-b border-dashed border-kuraRed cursor-pointer glossary-term" data-term="${term}">$1</span>`);
+          }
+        });
+        p.innerHTML = html;
+      });
+    }
+
+    window.onload = function() {
+      applyTheme(currentTheme);
+      applyLanguage(currentLang);
+      bindGlossaryInline();
+
+      document.getElementById('langToggle')?.addEventListener('click', () => applyLanguage(currentLang === 'en' ? 'zh' : 'en'));
+      document.getElementById('themeToggle')?.addEventListener('click', () => applyTheme(currentTheme === 'dark' ? 'light' : 'dark'));
+      document.getElementById('mobileMenuBtn')?.addEventListener('click', () => document.getElementById('mobileMenu')?.classList.toggle('hidden'));
+      
+      document.getElementById('trafficInput')?.addEventListener('input', updateSimulators);
+      document.getElementById('seafoodCostInput')?.addEventListener('input', updateSimulators);
+      document.getElementById('laborCostInput')?.addEventListener('input', updateSimulators);
+
+      document.getElementById('audioNextBtn')?.addEventListener('click', () => { if (!synth) return; synth.cancel(); currentProseIdx++; playProseChunk(); });
+      document.getElementById('audioPrevBtn')?.addEventListener('click', () => { if (!synth) return; synth.cancel(); currentProseIdx--; playProseChunk(); });
+      document.getElementById('audioStopBtn')?.addEventListener('click', stopNarrator);
+      
+      document.getElementById('audioGuideBtn')?.addEventListener('click', () => {
+        if (!synth) return;
+        if (isSpeaking) {
+          if (isPaused) {
+            synth.resume(); isPaused = false;
+            const st = document.getElementById('audioStatus'); if(st) st.textContent = translations[currentLang]["audio.title"];
+            const w = document.getElementById('audioBtnIconWrapper'); if(w) { w.innerHTML = '<i data-lucide="pause" class="w-5 h-5"></i>'; lucide.createIcons(); }
+            document.getElementById('audioPulseRing')?.classList.remove('hidden');
+          } else {
+            synth.pause(); isPaused = true;
+            const st = document.getElementById('audioStatus'); if(st) st.textContent = translations[currentLang]["audio.paused"];
+            const w = document.getElementById('audioBtnIconWrapper'); if(w) { w.innerHTML = '<i data-lucide="play" class="w-5 h-5"></i>'; lucide.createIcons(); }
+            document.getElementById('audioPulseRing')?.classList.add('hidden');
+          }
+        } else { buildProseQueue(); playProseChunk(); }
+      });
+
+      document.addEventListener('click', (e) => {
+        const t = e.target.closest('.glossary-term') || e.target.closest('[data-term]');
+        if (t) {
+          e.preventDefault();
+          const data = glossaryDb[t.getAttribute('data-term') || t.textContent.trim()];
+          if (data) {
+            const gt = document.getElementById('glossaryTitle'), gd = document.getElementById('glossaryDefinition'), gm = document.getElementById('glossaryModal'), gb = document.getElementById('glossaryBox');
+            if(gt) gt.textContent = t.getAttribute('data-term') || t.textContent.trim();
+            if(gd) gd.textContent = currentLang === 'zh' ? data.zh : data.en;
+            if(gm) gm.classList.remove('hidden');
+            setTimeout(() => { if(gb) { gb.classList.remove('scale-95'); gb.classList.add('scale-100'); } }, 10);
+          }
+        }
+      });
+
+      document.getElementById('closeGlossary')?.addEventListener('click', () => {
+        const gb = document.getElementById('glossaryBox');
+        if(gb) { gb.classList.remove('scale-100'); gb.classList.add('scale-95'); }
+        setTimeout(() => document.getElementById('glossaryModal')?.classList.add('hidden'), 150);
+      });
+
+      // Force load voices
+      window.speechSynthesis.getVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+      }
+    };
+  </script>
+</body>
+</html>
